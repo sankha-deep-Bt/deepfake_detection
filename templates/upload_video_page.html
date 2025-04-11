@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deepfake Detection</title>
+    <style>
+      /* Global Styles */
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(to right, #ece9e6, #ffffff);
+        margin: 0;
+        padding: 20px;
+        color: #333;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h2 {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2em;
+        color: #2c3e50;
+      }
+      form {
+        background: #fff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      input[type="file"] {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        background: #3498db;
+        border: none;
+        color: #fff;
+        padding: 12px 20px;
+        font-size: 1em;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        margin-right: 10px;
+      }
+      button:hover {
+        background: #2980b9;
+      }
+      .clear-btn {
+        background: #e74c3c;
+      }
+      .clear-btn:hover {
+        background: #c0392b;
+      }
+      .card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .result {
+        border-left: 6px solid #2ecc71;
+      }
+      .error {
+        border-left: 6px solid #e74c3c;
+      }
+      /* Loader Styles */
+      #loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        display: none;
+      }
+      .spinner {
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .image-gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+      .image-item img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Clear previous results when the clear button is clicked
+        document
+          .getElementById("clearBtn")
+          .addEventListener("click", function () {
+            window.location.href =
+              window.location.origin + window.location.pathname;
+          });
+
+        // Show loader on form submission
+        var form = document.getElementById("uploadForm");
+        form.addEventListener("submit", function () {
+          document.getElementById("loader").style.display = "flex";
+        });
+
+        // Handle dynamic preview of uploaded file
+        document
+          .getElementById("fileInput")
+          .addEventListener("change", function (event) {
+            const file = event.target.files[0];
+            if (file) {
+              const previewContainer = document.getElementById("filePreview");
+              previewContainer.innerHTML = ""; // Clear previous preview
+
+              if (file.type.startsWith("video/")) {
+                const video = document.createElement("video");
+                video.src = URL.createObjectURL(file);
+                video.width = "100%";
+                video.controls = true;
+                previewContainer.appendChild(video);
+              } else if (file.type.startsWith("image/")) {
+                const img = document.createElement("img");
+                img.src = URL.createObjectURL(file);
+                img.style.maxWidth = "100%";
+                img.style.borderRadius = "8px";
+                previewContainer.appendChild(img);
+              }
+            }
+          });
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Deepfake Detection</h2>
+
+      {% if error %}
+      <div class="card error"><strong>Error:</strong> {{ error }}</div>
+      {% endif %}
+
+      <form
+        id="uploadForm"
+        action="{% url 'upload_video_page' %}"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        {% csrf_token %}
+        <input
+          type="file"
+          id="fileInput"
+          name="video"
+          accept="video/*,image/*"
+          required
+        />
+        <div id="filePreview"></div>
+        <br />
+        <button type="submit">Predict</button>
+        <button type="button" id="clearBtn" class="clear-btn">Clear</button>
+      </form>
+
+      {% if video_url %}
+      <div class="card result">
+        <h3>Uploaded File: {{ video_name }}</h3>
+        {% if video_url|slice:"-4:" == ".mp4" %}
+        <video width="100%" controls>
+          <source src="{{ video_url }}" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        {% else %}
+        <img
+          src="{{ video_url }}"
+          alt="Uploaded Image"
+          style="width: 100%; border-radius: 8px"
+        />
+        {% endif %}
+      </div>
+      {% endif %} {% if prediction %}
+      <div class="card result">
+        <h3>Analysis Result</h3>
+        <p><strong>Prediction:</strong> {{ prediction }}</p>
+        <p><strong>Confidence Score:</strong> {{ confidence_score }}</p>
+      </div>
+      {% endif %} {% if image_urls %}
+      <div class="card result">
+        <h3>Extracted Faces</h3>
+        <div class="image-gallery">
+          {% for image_url in image_urls %}
+          <div class="image-item">
+            <img src="{{ image_url }}" alt="Extracted Face" />
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Loader Overlay -->
+    <div id="loader">
+      <div class="spinner"></div>
+    </div>
+  </body>
+</html>
