@@ -120,7 +120,7 @@ def upload_video_page(request):
             features_avg = np.mean(features_list, axis=0)
             features_avg = np.expand_dims(features_avg, axis=0)
             confidence_score = model.predict(features_avg)[0][0]
-            prediction = "Manipulated (Deepfake)" if confidence_score > 0.5 else "Original (Real)"
+            prediction = "Manipulated (or Deepfake)" if confidence_score > 0.5 else "Original (Real)"
             context["prediction"] = prediction
             context["confidence_score"] = float(confidence_score)
             
