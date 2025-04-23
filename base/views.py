@@ -21,7 +21,6 @@ model = load_model(MODEL_PATH)
 resnet_model = ResNet50(weights="imagenet", include_top=False, pooling="avg")
 
 def extract_faces_from_video(video_path, max_faces=10, target_size=(128, 128)):
-    """Extract faces from the video file along with their original frames."""
     video_capture = cv2.VideoCapture(video_path)
     faces_out = []
     
@@ -46,7 +45,6 @@ def extract_faces_from_video(video_path, max_faces=10, target_size=(128, 128)):
     return np.array(faces_out) if faces_out else None
 
 def extract_faces_from_image(image_path, target_size=(128, 128)):
-    """Extract faces from a single image file."""
     image = cv2.imread(image_path)
     if image is None:
         return None
@@ -60,7 +58,6 @@ def extract_faces_from_image(image_path, target_size=(128, 128)):
     return np.array(faces_out) if faces_out else None
 
 def extract_features_from_face(face_img):
-    """Extract features from a detected face using ResNet50."""
     face_resized = cv2.resize(face_img, (224, 224))
     face_array = img_to_array(face_resized)
     face_array = np.expand_dims(face_array, axis=0)
@@ -69,7 +66,6 @@ def extract_features_from_face(face_img):
     return features.flatten()
 
 def delete_old_images(image_paths, delay=300):
-    """Delete images after a certain delay."""
     time.sleep(delay)
     for image_path in image_paths:
         if os.path.exists(image_path):
@@ -85,7 +81,6 @@ def upload_video_page(request):
         
         # Determine if file is a video or an image
         if file_type.startswith("video/"):
-            # Process video upload
             upload_dir = os.path.join(settings.MEDIA_ROOT, "uploaded_videos")
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir)
@@ -97,10 +92,8 @@ def upload_video_page(request):
                     f.write(chunk)
             context["video_name"] = upload_file.name
             context["video_url"] = f"{settings.MEDIA_URL}uploaded_videos/{video_filename}"
-            # Extract faces from video
             faces = extract_faces_from_video(file_path)
         elif file_type.startswith("image/"):
-            # Process image upload
             upload_dir = os.path.join(settings.MEDIA_ROOT, "uploaded_images")
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir)
